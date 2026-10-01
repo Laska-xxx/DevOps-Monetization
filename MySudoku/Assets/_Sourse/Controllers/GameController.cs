@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Zenject;
 
 using Core.Board;
@@ -7,6 +6,7 @@ using Core.Generation;
 using Presentation.Views;
 using Services;
 using Signals;
+using Ads;
 
 namespace Controllers
 {
@@ -24,9 +24,11 @@ namespace Controllers
         private readonly IUndoService _undoService;
         private readonly SignalBus _signalBus;
         private readonly IBoardGeneratorFactory _generatorFactory;
-
+        private readonly AdsService _ads;
+        
         private CellView _selectedCell;
         private int? _pendingValue;
+        private float _adTimer;
 
         public GameController(
             BoardView boardView,
@@ -40,7 +42,8 @@ namespace Controllers
             INotesService notesService,
             IUndoService undoService,
             SignalBus signalBus,
-            IBoardGeneratorFactory generatorFactory)
+            IBoardGeneratorFactory generatorFactory, 
+            AdsService adsService)
         {
             _boardView = boardView;
             _hudView = hudView;
@@ -54,6 +57,7 @@ namespace Controllers
             _undoService = undoService;
             _signalBus = signalBus;
             _generatorFactory = generatorFactory;
+            _ads = adsService;
         }
 
         public void Initialize()
@@ -102,6 +106,17 @@ namespace Controllers
         {
             if (_session.Board == null) return;
             _hudView.SetTime(_session.ElapsedSeconds);
+
+            if (!_session.IsPlaying || _ads.IsShowing || _purchaseOffer.IsOpen) 
+                return;
+
+            _adTimer += UnityEngine.Time.unscaledDeltaTime;
+            if (_adTimer < _ads.InterstitialInterval || !_ads.IsInterstitialReady) 
+                return;
+
+            _adTimer = 0f;
+            _session.Pause();
+            _ads.ShowInterstitial(_session.Resume);
         }
 
         public void ActivateGameScreen()
@@ -127,6 +142,7 @@ namespace Controllers
             _boardView.ClearHighlights();
 
             _gameView.Show();
+            _ads.ShowBanner();
         }
 
         public void RefreshAfterRestart()
@@ -262,16 +278,12 @@ namespace Controllers
             if (!_session.HasFreeHint)
             {
                 _purchaseOffer.RequestHintPurchase();
-                return;
+                return; 
             }
 
             _confirmationDialog.ShowWithMessage(
                 "Использовать бесплатную подсказку?",
-                onConfirm: () =>
-                {
-                    if (_session.UseHint())
-                        _numberPadView.SetHintAvailable(false);
-                });
+                     onConfirm: () => _session.UseHint());
         }
 
         private void OnUndoClicked()
@@ -311,6 +323,8 @@ namespace Controllers
 
         public void ReturnToMainMenu()
         {
+            _ads.HideBanner();
+
             _gameView.Hide();
             _signalBus.Fire(new ReturnedToMainMenuSignal());
         }

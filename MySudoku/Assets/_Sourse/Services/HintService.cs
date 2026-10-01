@@ -11,34 +11,39 @@ namespace Services
         bool HasFreeHint { get; }
         void ResetForNewGame();
         bool TryUseHint(BoardModel board, out int row, out int col, out int value);
+        void GrantRewardedHint();
     }
 
     public class HintService : IHintService
     {
-        private const int HintCost = 30;
-
-        private readonly ICurrencyService _currency;
         private readonly SignalBus _signalBus;
         private readonly Random _rng = new Random();
 
         private bool _freeHintUsed;
+        private int _adHints;
 
         public bool HasFreeHint => !_freeHintUsed;
 
-        public HintService(ICurrencyService currency, SignalBus signalBus)
+        public HintService(SignalBus signalBus)
         {
-            _currency = currency;
             _signalBus = signalBus;
         }
 
-        public void ResetForNewGame() => _freeHintUsed = false;
+        public void ResetForNewGame()
+        {
+            _freeHintUsed = false;
+            _adHints = 0;
+        }
 
         public bool TryUseHint(BoardModel board, out int row, out int col, out int value)
         {
             row = col = value = -1;
 
-            if (!HasFreeHint && !_currency.TrySpend(HintCost))
-                return false;
+            if (!HasFreeHint)
+            {
+                if (_adHints <= 0) return false;
+                _adHints--;
+            }
 
             var emptyCells = new List<(int row, int col)>();
             int n = board.SideLength;
@@ -64,6 +69,11 @@ namespace Services
             _signalBus.Fire(new HintUsedSignal { WasFree = wasFree });
 
             return true;
+        }
+
+        public void GrantRewardedHint()
+        {
+            _adHints++;
         }
     }
 }

@@ -11,26 +11,23 @@ namespace Services
         void Reset(int startingHealth = 3);
         void SetHealth(int health);
         void RegisterMistake();
-        bool TryReviveWithCurrency();
+        void Revive();
     }
 
     public class HealthService : IHealthService
     {
         private const int StartingHealth = 3;
-        private const int ReviveCost = 50; 
 
         private readonly SignalBus _signalBus;
-        private readonly ICurrencyService _currency;
 
         private int _health;
 
         public int CurrentHealth => _health;
         public bool ChillModeActive { get; set; }
 
-        public HealthService(SignalBus signalBus, ICurrencyService currency)
+        public HealthService(SignalBus signalBus)
         {
             _signalBus = signalBus;
-            _currency = currency;
         }
 
         public void Reset(int startingHealth = StartingHealth) => _health = startingHealth;
@@ -49,13 +46,10 @@ namespace Services
                 _signalBus.Fire(new HealthDepletedSignal());
         }
 
-        public bool TryReviveWithCurrency()
+        public void Revive()
         {
-            if (_health > 0) return true;
-            if (!_currency.TrySpend(ReviveCost)) return false;
-
-            _health = 1;
-            return true;
+            if (_health <= 0) 
+                _health = 1;
         }
     }
 }

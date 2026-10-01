@@ -7,6 +7,8 @@ using Zenject;
 using Data;
 using Services;
 using Signals;
+using Ads;
+using Presentation.Views;
 
 namespace Controllers
 {
@@ -21,13 +23,20 @@ namespace Controllers
 
         private enum Kind { ExtraLife, ExtraHint }
         private Kind _currentKind;
+        private AdsService _ads;
+        private HudView _hud;
+
+        public bool IsOpen { get; private set; }
 
         private GameSessionController _session;
         private SignalBus _signalBus;
 
-        [Inject] private void Init(GameSessionController session, IThemeService themeService, SignalBus signalBus)
+        [Inject]
+        private void Init(GameSessionController session, Ads.AdsService ads, Presentation.Views.HudView hud, IThemeService themeService, SignalBus signalBus)
         {
             _session = session;
+            _ads = ads;
+            _hud = hud;
             _signalBus = signalBus;
             _panelBackground.color = themeService.Current.PopupPanel;
             _signalBus.Subscribe<HealthDepletedSignal>(OnHealthDepleted);
@@ -58,21 +67,42 @@ namespace Controllers
         {
             _currentKind = kind;
             _messageText.text = kind == Kind.ExtraLife
-                ? "Жизни закончились. Купить ещё одну за спец. валюту?"
-                : "Бесплатная подсказка уже использована. Купить ещё одну за спец. валюту?";
+                ? "Жизни закончились. Посмотреть рекламу?"
+                : "Бесплатной подсказки нет. Посмотреть рекламу?";
             Show();
         }
 
         private void OnBuyClicked()
         {
-            bool success = _currentKind == Kind.ExtraLife
-                ? _session.TryReviveWithCurrency()
-                : _session.UseHint();
+            if (!_ads.IsRewardedReady)
+            {
+                _messageText.text = "Реклама ещё загружается, попробуйте через пару секунд.";
+                _ads.LoadRewarded();
+                return;
+            }
 
-            Hide();
-
-            if (!success && _currentKind == Kind.ExtraLife)
-                _session.ConfirmGameOver();
+            _session.Pause();
+            _ads.ShowRewarded(
+                onRewarded: () =>
+                {
+                    _session.Resume();
+                    if (_currentKind == Kind.ExtraLife)
+                    {
+                        _session.ReviveFromAd();
+                        _hud.SetHealth(_session.CurrentHealth);
+                    }
+                    else
+                    {
+                        _session.GrantRewardedHint();
+                        _session.UseHint();
+                    }
+                    Hide();
+                },
+                onFailed: () =>
+                {
+                    _session.Resume();
+                    _messageText.text = "Реклама не досмотрена — награда не начислена.";
+                });
         }
 
         private void OnCloseClicked()
@@ -85,6 +115,7 @@ namespace Controllers
 
         private void Show()
         {
+            IsOpen = true;
             gameObject.SetActive(true);
             DOTween.Kill(this);
             _canvasGroup.alpha = 0f;
@@ -96,6 +127,7 @@ namespace Controllers
 
         private void Hide()
         {
+            IsOpen = false;
             DOTween.Kill(this);
             _canvasGroup.DOFade(0f, _fadeDuration)
                 .SetUpdate(true)

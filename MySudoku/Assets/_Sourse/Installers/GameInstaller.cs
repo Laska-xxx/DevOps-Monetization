@@ -34,8 +34,6 @@ namespace Installers
             InstallControllers();
         }
 
-        // ---------- Signals (Observer) ----------
-
         private void InstallSignals()
         {
             SignalBusInstaller.Install(Container);
@@ -52,8 +50,6 @@ namespace Installers
             Container.DeclareSignal<ThemeChangedSignal>();
         }
 
-        // ---------- ScriptableObject-данные ----------
-
         private void InstallData()
         {
             Container.Bind<IReadOnlyList<ColorThemeSO>>().FromInstance(_availableThemes).AsSingle();
@@ -62,29 +58,24 @@ namespace Installers
             Container.Bind<DifficultyConfigSO>().FromInstance(_difficultyConfig).AsSingle();
         }
 
-        // ---------- Экраны и попапы (MonoBehaviour со сцены) ----------
-
         private void InstallScreens()
         {
-            // StaticUICanvas — экраны, между которыми переключается ShowExclusive()
+            Container.Bind<Ads.AdsService>().FromComponentInHierarchy().AsSingle();
+
             Container.Bind<MainMenuController>().FromComponentInHierarchy().AsSingle();
             Container.Bind<StatisticsController>().FromComponentInHierarchy().AsSingle();
             Container.Bind<SettingsController>().FromComponentInHierarchy().AsSingle();
             Container.Bind<TutorialController>().FromComponentInHierarchy().AsSingle();
 
-            // Нижняя навигация — не экран, всегда на месте
             Container.Bind<NavigationBarController>().FromComponentInHierarchy().AsSingle();
 
-            // Панель выбора сложности — оверлей поверх меню, не экран
             Container.Bind<DifficultySelectController>().FromComponentInHierarchy().AsSingle();
 
-            // GameplayCanvas
             Container.Bind<GameView>().FromComponentInHierarchy().AsSingle();
             Container.Bind<BoardView>().FromComponentInHierarchy().AsSingle();
             Container.Bind<HudView>().FromComponentInHierarchy().AsSingle();
             Container.Bind<NumberPadView>().FromComponentInHierarchy().AsSingle();
 
-            // OverlayCanvas — попапы
             Container.Bind<ConfirmationDialogView>().FromComponentInHierarchy().AsSingle();
             Container.Bind<PauseOverlayView>().FromComponentInHierarchy().AsSingle();
             Container.Bind<ChillModeWarningView>().FromComponentInHierarchy().AsSingle();
@@ -94,8 +85,6 @@ namespace Installers
 
             Container.Bind<BackgroundThemeApplier>().FromComponentInHierarchy().AsSingle();
 
-            // Список типов экранов для ScreenService — резолвятся лениво
-            // (см. комментарий в ScreenService), не сразу здесь.
             var screenTypes = new List<System.Type>
             {
                 typeof(MainMenuController),
@@ -109,8 +98,6 @@ namespace Installers
                 .AsSingle();
         }
 
-        // ---------- Core: генерация полей ----------
-
         private void InstallCoreGeneration()
         {
             Container.Bind<IReadOnlyDictionary<DifficultyLevel, DifficultySettings>>()
@@ -119,8 +106,6 @@ namespace Installers
 
             Container.Bind<Classic9x9Strategy>().AsSingle();
 
-            // TODO: заменить на реального провайдера, читающего PuzzleBankAsset,
-            // когда банк пазлов для 16x16/25x25 будет подготовлен.
             Container.Bind<Core.Generation.PuzzleBank.IPuzzleBankProvider>()
                 .To<EmptyPuzzleBankProvider>().AsSingle();
 
@@ -129,8 +114,6 @@ namespace Installers
 
             Container.Bind<IBoardGeneratorFactory>().To<BoardGeneratorFactory>().AsSingle();
         }
-
-        // ---------- Services ----------
 
         private void InstallServices()
         {
@@ -152,15 +135,11 @@ namespace Installers
             Container.Bind<INotesService>().To<NotesService>().AsSingle();
             Container.Bind<IHintService>().To<HintService>().AsSingle();
 
-            // TODO: заменить на реального провайдера поверх LocalizationTableSO,
-            // когда таблицы переводов будут готовы (см. обсуждение локализации).
             Container.Bind<ILocalizationProvider>().To<SimpleLocalizationProvider>().AsSingle();
             Container.Bind<ILocalizationService>().To<LocalizationService>().AsSingle();
 
             Container.BindInterfacesAndSelfTo<GameSessionController>().AsSingle();
         }
-
-        // ---------- Controllers (плюс GameController — единственный НЕ MonoBehaviour) ----------
 
         private void InstallControllers()
         {

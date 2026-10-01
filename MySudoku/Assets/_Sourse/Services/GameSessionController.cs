@@ -46,6 +46,7 @@ namespace Services
         public int CurrentScore => _scoreService.CurrentScore;
         public int CurrentHealth => _healthService.CurrentHealth;
         public bool HasFreeHint => _hintService.HasFreeHint;
+        public bool IsPlaying => _currentState == _playingState;
 
         float IGameStateHost.ElapsedSeconds
         {
@@ -256,7 +257,8 @@ namespace Services
             return false;
         }
 
-        public bool TryReviveWithCurrency() => _healthService.TryReviveWithCurrency();
+        public void ReviveFromAd() => _healthService.Revive();
+        public void GrantRewardedHint() => _hintService.GrantRewardedHint();
 
         public void SaveProgress()
         {
