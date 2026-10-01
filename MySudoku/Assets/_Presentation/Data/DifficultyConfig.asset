@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4dbc6a7400af4ac49ba777941cddc9cf, type: 3}
+  m_Name: DifficultyConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Data.DifficultyConfigSO
+  _entries:
+  - Level: 0
+    MinEmptyCells: 30
+    MaxEmptyCells: 35
+    RequireAdvancedTechniques: 0
+    MaxGenerationAttempts: 20
+  - Level: 1
+    MinEmptyCells: 36
+    MaxEmptyCells: 45
+    RequireAdvancedTechniques: 0
+    MaxGenerationAttempts: 20
+  - Level: 2
+    MinEmptyCells: 46
+    MaxEmptyCells: 52
+    RequireAdvancedTechniques: 0
+    MaxGenerationAttempts: 20
+  - Level: 3
+    MinEmptyCells: 53
+    MaxEmptyCells: 58
+    RequireAdvancedTechniques: 1
+    MaxGenerationAttempts: 30
+  - Level: 4
+    MinEmptyCells: 59
+    MaxEmptyCells: 64
+    RequireAdvancedTechniques: 1
+    MaxGenerationAttempts: 40
